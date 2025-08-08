@@ -1,25 +1,28 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const webhookRoutes = require("./routes/webhook");
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const processPayload = require('./processpayloads');
 
 const app = express();
-const PORT = 3000;
-
-// Middleware
-app.use(express.json());
-
-// Routes
-app.use("/", webhookRoutes);
+app.use(bodyParser.json());
 
 // MongoDB connection
-mongoose.connect("mongodb://localhost:27017/whatsapp-webhook", {
+mongoose.connect('mongodb://localhost:27017/whatsapp', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => {
-  console.log("Connected to MongoDB");
-  app.listen(PORT, () => {
-    console.log('Server is running on http://localhost:${PORT}');
-  });
-}).catch((error) => {
-  console.error("MongoDB connection failed:", error);
+  console.log(' Connected to MongoDB');
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+});
+
+// Webhook endpoint
+app.post('/webhook', async (req, res) => {
+  const payload = req.body;
+  await processPayload(payload);
+  res.status(200).send('Message received');
+});
+
+app.listen(3000, () => {
+  console.log(' Server is running on http://localhost:3000');
 });
