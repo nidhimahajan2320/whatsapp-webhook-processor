@@ -1,43 +1,34 @@
 // processpayloads.js
+const fs = require('fs');
+const path = require('path');
+const payloadFile = path.join(__dirname, 'payloads.json');
 
-const mongoose = require('mongoose');
-
-// MongoDB ke liye schema banate hain
-const messageSchema = new mongoose.Schema({
-  from: String,
-  id: String,
-  timestamp: String,
-  text: String,
-  type: String,
-});
-
-// Model banate hain
-const Message = mongoose.model('Message', messageSchema);
-
-// Payload process karne ka function
-async function processPayload(payload) {
+async function savePayloadToFile(payload) {
+  let data = [];
   try {
-    const entry = payload.entry?.[0];
-    const change = entry?.changes?.[0];
-    const message = change?.value?.messages?.[0];
-
-    if (message) {
-      const newMessage = new Message({
-        from: message.from,
-        id: message.id,
-        timestamp: message.timestamp,
-        text: message.text?.body || '',
-        type: message.type,
-      });
-
-      await newMessage.save();
-      console.log(" Message saved to MongoDB");
-    } else {
-      console.log(" No message found in payload");
+    if (fs.existsSync(payloadFile)) {
+      const existing = fs.readFileSync(payloadFile, 'utf8');
+      data = existing ? JSON.parse(existing) : [];
     }
-  } catch (error) {
-    console.error(" Error processing payload:", error);
+  } catch (err) {
+    console.error('Error reading payloads.json:', err);
+  }
+
+  // add timestamp and payload
+  data.push({
+    receivedAt: new Date().toISOString(),
+    payload
+  });
+
+  try {
+    fs.writeFileSync(payloadFile, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error writing payloads.json:', err);
+    throw err;
   }
 }
 
-module.exports = processPayload;
+module.exports = async function processPayload(payload) {
+  console.log('✅ processPayload called');
+  await savePayloadToFile(payload);
+};
