@@ -1,5 +1,5 @@
 // app.js
-
+const socket = io();
 const express = require("express");
 const app = express();
 const PORT = 3000;

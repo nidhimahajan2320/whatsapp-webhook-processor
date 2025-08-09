@@ -3,32 +3,29 @@ const fs = require('fs');
 const path = require('path');
 const payloadFile = path.join(__dirname, 'payloads.json');
 
-async function savePayloadToFile(payload) {
-  let data = [];
+function ensurePayloadFile() {
+  if (!fs.existsSync(payloadFile)) fs.writeFileSync(payloadFile, '[]', 'utf8');
+}
+
+async function savePayload(payload) {
+  ensurePayloadFile();
+  let arr = [];
   try {
-    if (fs.existsSync(payloadFile)) {
-      const existing = fs.readFileSync(payloadFile, 'utf8');
-      data = existing ? JSON.parse(existing) : [];
-    }
-  } catch (err) {
-    console.error('Error reading payloads.json:', err);
+    const raw = fs.readFileSync(payloadFile, 'utf8');
+    arr = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error('Error reading payloads.json', e);
   }
 
-  // add timestamp and payload
-  data.push({
+  arr.push({
     receivedAt: new Date().toISOString(),
     payload
   });
 
-  try {
-    fs.writeFileSync(payloadFile, JSON.stringify(data, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Error writing payloads.json:', err);
-    throw err;
-  }
+  fs.writeFileSync(payloadFile, JSON.stringify(arr, null, 2), 'utf8');
 }
 
 module.exports = async function processPayload(payload) {
-  console.log('✅ processPayload called');
-  await savePayloadToFile(payload);
+  console.log('processPayload called — saving payload to payloads.json');
+  await savePayload(payload);
 };
